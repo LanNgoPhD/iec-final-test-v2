@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IEC – FINAL TEST V2</title>
+<title>IEC – BÀI KIỂM TRA CUỐI NGÀY V2</title>
 <style>
   *{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;color:#202124}
   .wrap{max-width:820px;margin:28px auto;padding:0 16px}.card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.10);margin-bottom:16px}
-  h1{margin:0 0 8px;font-size:28px}.sub{color:#5f6368;line-height:1.5;margin:0 0 18px}
+  h1{margin:0 0 4px;font-size:28px}.dev-note{font-size:11px;color:#9aa0a6;font-weight:400;text-align:center;margin:2px 0 14px}.sub{color:#5f6368;line-height:1.5;margin:0 0 18px}
   .grid{display:grid;grid-template-columns:1fr 160px;gap:12px}@media(max-width:600px){.grid{grid-template-columns:1fr}}
-  label{display:block;font-weight:700;margin-bottom:6px}input{width:100%;padding:12px;border:1px solid #cfd5dd;border-radius:9px;font-size:16px}
+  label{display:block;font-weight:700;margin-bottom:6px}input{width:100%;padding:12px;border:1px solid #cfd5dd;border-radius:9px;font-size:16px}input[readonly]{background:#f8f9fa;color:#3c4043;cursor:not-allowed}
   button{border:0;border-radius:10px;padding:13px 18px;font-size:15px;font-weight:700;cursor:pointer}.primary{background:#1a73e8;color:#fff}.secondary{background:#e8f0fe;color:#174ea6}.danger{background:#d93025;color:#fff}.success{background:#188038;color:#fff}button:disabled{opacity:.55;cursor:not-allowed}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.hidden{display:none!important}
   .word{font-size:34px;font-weight:700;text-align:center;margin:26px 0 12px}.progress{text-align:center;color:#5f6368;font-weight:700}.timer{text-align:center;font-size:20px;margin-bottom:20px}
@@ -21,29 +21,30 @@
 <body>
 <div class="wrap">
   <div class="card" id="startCard">
-    <h1>IEC – FINAL TEST V2</h1>
-    <p class="sub">Say the English term after the Vietnamese prompt. If you want to replace the first answer, say <b>AGAIN</b> once. If voice is detected in time but speech-to-text cannot confirm the term, the result is <b>GREEN / PENDING</b>, not RED.</p>
+    <h1>IEC – BÀI KIỂM TRA CUỐI NGÀY V2</h1>
+    <div class="dev-note">Phát triển bởi TS. Lân NGÔ – Khoa Máy tàu biển, Trường Đại học Hàng hải Việt Nam</div>
+    <p class="sub">Nghe từ tiếng Việt và nói thuật ngữ tiếng Anh tương ứng. Nếu muốn thay câu trả lời đầu tiên, nói <b>AGAIN</b> một lần. Nếu hệ thống phát hiện có giọng nói trong thời gian cho phép nhưng chưa nhận diện chính xác được từ, kết quả sẽ là <b>XANH LÁ / CHỜ DUYỆT</b>. Nếu không có câu trả lời, kết quả sẽ là <b>ĐỎ</b>.</p>
     <div class="grid">
-      <div><label for="studentId">STUDENT_ID</label><input id="studentId" autocomplete="off" placeholder="e.g. TEST01"></div>
-      <div><label for="day">DAY</label><input id="day" type="number" min="1" value="1"></div>
+      <div><label for="studentId">MÃ SINH VIÊN</label><input id="studentId" autocomplete="off" placeholder="Ví dụ: TEST01"></div>
+      <div><label for="day">NGÀY THAM GIA IEC</label><input id="day" type="text" value="" readonly></div>
     </div>
-    <div class="actions"><button id="startBtn" class="primary">LOADING CONFIG...</button></div>
-    <div class="note">FINAL is only available inside the configured time window. A test ID beginning with TEST can bypass the schedule when ALLOW_TEST_BYPASS is enabled.</div>
+    <div class="actions"><button id="startBtn" class="primary">ĐANG TẢI CẤU HÌNH...</button></div>
+    <div class="note">Bài kiểm tra cuối ngày chỉ mở trong khung giờ đã quy định. Mã sinh viên bắt buộc phải có; ngày tham gia IEC do hệ thống tự xác định.</div>
   </div>
 
   <div class="card hidden" id="testArea">
     <div class="progress" id="progress">0 / 0</div>
     <div class="word" id="vietnamese">---</div>
     <div class="timer" id="timer">--</div>
-    <div class="info"><b>Heard</b><span id="heard">---</span><b>First answer</b><span id="firstAnswer">---</span><b>Final answer</b><span id="finalAnswer">---</span><b>AGAIN</b><span id="restartInfo">---</span></div>
-    <div class="status" id="status">READY</div>
-    <div class="actions"><button id="nextBtn" class="secondary">NEXT</button><button id="stopBtn" class="danger">STOP TEST</button></div>
-    <div class="note">NEXT with no voice = RED. If voice was detected, NEXT locks the current result immediately. Reaction time never resets after AGAIN.</div>
+    <div class="info"><b>Hệ thống nghe được</b><span id="heard">---</span><b>Câu trả lời đầu tiên</b><span id="firstAnswer">---</span><b>Câu trả lời cuối cùng</b><span id="finalAnswer">---</span><b>Khẩu lệnh AGAIN</b><span id="restartInfo">---</span></div>
+    <div class="status" id="status">SẴN SÀNG</div>
+    <div class="actions"><button id="nextBtn" class="secondary">TIẾP THEO</button><button id="stopBtn" class="danger">DỪNG BÀI</button></div>
+    <div class="note">Bấm TIẾP THEO khi chưa có giọng nói sẽ cho kết quả ĐỎ. Nếu đã có giọng nói, hệ thống chốt ngay kết quả hiện tại. Thời gian phản xạ không được tính lại sau khi nói AGAIN.</div>
 
     <div id="clipBox" class="clipBox hidden">
-      <label for="clipUrl">FINAL CLIP URL</label>
-      <input id="clipUrl" placeholder="Paste Google Drive / video link here">
-      <div class="actions"><button id="clipBtn" class="success">SUBMIT CLIP LINK</button></div>
+      <label for="clipUrl">LINK VIDEO CUỐI NGÀY</label>
+      <input id="clipUrl" placeholder="Dán liên kết Google Drive / video tại đây">
+      <div class="actions"><button id="clipBtn" class="success">NỘP LINK VIDEO</button></div>
       <div id="submitMsg" class="msg"></div>
     </div>
   </div>
@@ -67,69 +68,69 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("clipBtn").addEventListener("click",submitClip);
   window.addEventListener("message",handleBackendMessage);
   const p=new URLSearchParams(location.search); const s=String(p.get("student")||"").trim(); const d=Number(p.get("day"));
-  if(s) document.getElementById("studentId").value=s; if(d>0) document.getElementById("day").value=String(d);
+  if(s) document.getElementById("studentId").value=s; if(d>0) document.getElementById("day").value="NGÀY "+d;
   loadConfig();
 });
 
 async function loadConfig(){
   const b=document.getElementById("startBtn"); b.disabled=true;
   try{CONFIG=await jsonp(API_BASE+"?api=final-config"); if(!CONFIG||CONFIG.ok===false) throw new Error(CONFIG&&CONFIG.error||"Invalid config");
-    document.getElementById("day").max=String(CONFIG.COURSE_DAYS||99); b.disabled=false;b.textContent="START";
-  }catch(e){b.textContent="CONFIG ERROR";document.getElementById("status").textContent=String(e.message||e);}
+    b.disabled=false;b.textContent="BẮT ĐẦU";
+  }catch(e){b.textContent="LỖI CẤU HÌNH";document.getElementById("status").textContent=String(e.message||e);}
 }
 
 async function startTest(){
   if(testRunning)return;
-  const b=document.getElementById("startBtn"); currentStudentId=String(document.getElementById("studentId").value||"").trim(); currentDay=Number(document.getElementById("day").value);
-  if(!currentStudentId){alert("STUDENT_ID is required.");return} if(!currentDay){alert("DAY is required.");return}
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Use Google Chrome: Speech Recognition is unavailable.");return}
-  b.disabled=true;b.textContent="MIC PERMISSION...";
+  const b=document.getElementById("startBtn"); currentStudentId=String(document.getElementById("studentId").value||"").trim(); currentDay=Number(new URLSearchParams(location.search).get("day"));
+  if(!currentStudentId){alert("Mã sinh viên bắt buộc phải có.");return} if(!currentDay){alert("Hệ thống chưa xác định được ngày tham gia IEC. Hãy mở đúng liên kết được gửi trong ngày.");return}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Hãy sử dụng Google Chrome: trình duyệt hiện tại không hỗ trợ nhận diện giọng nói.");return}
+  b.disabled=true;b.textContent="ĐANG XIN QUYỀN MICRO...";
   try{
-    await ensureMicrophonePermission(); b.textContent="LOADING TEST...";
+    await ensureMicrophonePermission(); b.textContent="ĐANG TẢI BÀI...";
     const data=await jsonp(API_BASE+"?api=final-test&student="+encodeURIComponent(currentStudentId)+"&day="+currentDay);
     if(!data||data.ok===false)throw new Error(data&&data.error||"Invalid FINAL data");
-    if(data.rest||!Array.isArray(data.words)||!data.words.length){b.disabled=false;b.textContent="NO RED – REST TODAY";return}
+    if(data.rest||!Array.isArray(data.words)||!data.words.length){b.disabled=false;b.textContent="KHÔNG CÓ TỪ ĐỎ – HÔM NAY KHÔNG CẦN LÀM";return}
     WORDS=data.words.map(w=>({coreId:Number(w.stt),vietnamese:String(w.vietnamese||""),english:String(w.english||""),ipa:String(w.ipa||""),pronNote:String(w.pronNote||""),chapter:String(w.chapter||""),source:String(w.source||"NEW").toUpperCase()}));
     finalResults=[];sessionId=String(data.sessionId||makeSessionId());testStartIso=String(data.startTime||new Date().toISOString());
-    document.getElementById("studentId").disabled=true;document.getElementById("day").disabled=true;b.classList.add("hidden");
+    document.getElementById("studentId").disabled=true;b.classList.add("hidden");
     document.getElementById("testArea").classList.remove("hidden");currentIndex=0;testRunning=true;prepareWord();
-  }catch(e){console.error(e);b.disabled=false;b.textContent="START";alert("START ERROR\n\n"+String(e.message||e));}
+  }catch(e){console.error(e);b.disabled=false;b.textContent="BẮT ĐẦU";alert("LỖI KHỞI ĐỘNG\n\n"+String(e.message||e));}
 }
 
 async function ensureMicrophonePermission(){
-  if(window.top!==window.self)throw new Error("Open FINAL as a top-level page."); if(location.protocol!=="https:")throw new Error("HTTPS is required for microphone.");
+  if(window.top!==window.self)throw new Error("Hãy mở bài kiểm tra cuối ngày trực tiếp trên trình duyệt."); if(location.protocol!=="https:")throw new Error("Cần kết nối HTTPS để sử dụng micro.");
   const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());
 }
 
 function prepareWord(){
   if(!testRunning)return;if(currentIndex>=WORDS.length){finishTest();return}
   clearTimers();safeAbortRecognition();responseLocked=false;wordStartTime=null;firstSpeechTime=null;sessionSpeechStartTime=null;currentUtterance="";firstAnswer="";finalAnswer="";restartCount=0;speechSeenInSession=false;voiceDetectedCurrent=false;
-  document.getElementById("progress").textContent=(currentIndex+1)+" / "+WORDS.length;document.getElementById("vietnamese").textContent="WAITING FOR MICROPHONE...";document.getElementById("timer").textContent="--";document.getElementById("heard").textContent="---";document.getElementById("firstAnswer").textContent="---";document.getElementById("finalAnswer").textContent="---";document.getElementById("restartInfo").textContent="";document.getElementById("status").textContent="Preparing microphone...";
+  document.getElementById("progress").textContent=(currentIndex+1)+" / "+WORDS.length;document.getElementById("vietnamese").textContent="ĐANG CHỜ MICRO...";document.getElementById("timer").textContent="--";document.getElementById("heard").textContent="---";document.getElementById("firstAnswer").textContent="---";document.getElementById("finalAnswer").textContent="---";document.getElementById("restartInfo").textContent="";document.getElementById("status").textContent="Đang chuẩn bị micro...";
   startRecognitionSession("PRIMARY",true);
 }
 
 function startRecognitionSession(mode,showWordOnStart){
   if(!testRunning||responseLocked)return;const SR=window.SpeechRecognition||window.webkitSpeechRecognition;recognition=new SR();recognition.lang="en-US";recognition.continuous=false;recognition.interimResults=true;recognition.maxAlternatives=1;currentUtterance="";speechSeenInSession=false;
   recognition.onstart=function(){if(!testRunning||responseLocked)return;if(showWordOnStart){document.getElementById("vietnamese").textContent=WORDS[currentIndex].vietnamese;if(wordStartTime===null){wordStartTime=performance.now();startReactionTimer();}}
-    document.getElementById("heard").textContent="Listening...";document.getElementById("status").textContent=mode==="REANSWER"?"LISTENING – REANSWER":mode==="AGAIN_WINDOW"?"Say AGAIN now if you want to correct":"LISTENING";
+    document.getElementById("heard").textContent="Đang nghe...";document.getElementById("status").textContent=mode==="TRẢ LỜI LẠI"?"ĐANG NGHE – TRẢ LỜI LẠI":mode==="AGAIN_WINDOW"?"Nói AGAIN ngay nếu muốn sửa câu trả lời":"ĐANG NGHE";
     if(mode==="AGAIN_WINDOW"){clearTimeout(silenceTimer);silenceTimer=setTimeout(()=>{if(!responseLocked&&testRunning){safeAbortRecognition();finalizeCurrentAnswer();}},Number(CONFIG.SILENCE_END_SEC)*1000);}
   };
   recognition.onspeechstart=function(){if(!testRunning||responseLocked)return;sessionSpeechStartTime=performance.now();speechSeenInSession=true;voiceDetectedCurrent=true;clearTimeout(silenceTimer);if(firstSpeechTime===null){firstSpeechTime=performance.now();const reaction=(firstSpeechTime-wordStartTime)/1000;stopReactionTimer();document.getElementById("timer").textContent=reaction.toFixed(2)+" s";}startMaxSpeechTimer();};
-  recognition.onresult=function(event){if(!testRunning||responseLocked)return;let t="";for(let i=0;i<event.results.length;i++)t+=event.results[i][0].transcript+" ";currentUtterance=t.trim().replace(/\s+/g," ");document.getElementById("heard").textContent=currentUtterance||"Listening...";};
-  recognition.onspeechend=function(){if(!testRunning||responseLocked)return;clearTimeout(maxSpeechTimer);maxSpeechTimer=null;document.getElementById("status").textContent="Processing...";};
-  recognition.onerror=function(event){if(!testRunning||responseLocked)return;if(event.error==="no-speech")return;if(event.error==="not-allowed"||event.error==="service-not-allowed"){testRunning=false;clearTimers();alert("MICROPHONE NOT ALLOWED. Allow microphone and reload.");return}document.getElementById("status").textContent="MIC ERROR: "+event.error;};
+  recognition.onresult=function(event){if(!testRunning||responseLocked)return;let t="";for(let i=0;i<event.results.length;i++)t+=event.results[i][0].transcript+" ";currentUtterance=t.trim().replace(/\s+/g," ");document.getElementById("heard").textContent=currentUtterance||"Đang nghe...";};
+  recognition.onspeechend=function(){if(!testRunning||responseLocked)return;clearTimeout(maxSpeechTimer);maxSpeechTimer=null;document.getElementById("status").textContent="ĐANG XỬ LÝ...";};
+  recognition.onerror=function(event){if(!testRunning||responseLocked)return;if(event.error==="no-speech")return;if(event.error==="not-allowed"||event.error==="service-not-allowed"){testRunning=false;clearTimers();alert("CHƯA CHO PHÉP MICRO. Hãy cho phép sử dụng micro rồi tải lại trang.");return}document.getElementById("status").textContent="LỖI MICRO: "+event.error;};
   recognition.onend=function(){if(!testRunning||responseLocked)return;clearTimeout(maxSpeechTimer);maxSpeechTimer=null;
-    if(!speechSeenInSession){if(mode==="PRIMARY"&&firstSpeechTime===null){const elapsed=wordStartTime===null?0:(performance.now()-wordStartTime)/1000;if(elapsed<Number(CONFIG.REACTION_LIMIT_SEC)){startRecognitionSession("PRIMARY",false);return}lockResponse("REACTION");return}if(mode==="REANSWER"){finalizeCurrentAnswer();return}if(mode==="AGAIN_WINDOW"){finalizeCurrentAnswer();return}}
+    if(!speechSeenInSession){if(mode==="PRIMARY"&&firstSpeechTime===null){const elapsed=wordStartTime===null?0:(performance.now()-wordStartTime)/1000;if(elapsed<Number(CONFIG.REACTION_LIMIT_SEC)){startRecognitionSession("PRIMARY",false);return}lockResponse("REACTION");return}if(mode==="TRẢ LỜI LẠI"){finalizeCurrentAnswer();return}if(mode==="AGAIN_WINDOW"){finalizeCurrentAnswer();return}}
     processUtterance(currentUtterance,mode);
   };
-  try{recognition.start()}catch(e){document.getElementById("status").textContent="START ERROR: "+e.message}
+  try{recognition.start()}catch(e){document.getElementById("status").textContent="LỖI KHỞI ĐỘNG: "+e.message}
 }
 
 function processUtterance(text,mode){
   if(!testRunning||responseLocked)return;const cleaned=String(text||"").trim().replace(/\s+/g," ");if(!cleaned){finalizeCurrentAnswer();return}
   const restartWord=String(CONFIG.RESTART_WORD||"AGAIN").trim().toLowerCase();const normalized=cleaned.toLowerCase();if(normalized===restartWord){handleAgain();return}
   const tokens=cleaned.split(/\s+/);const ai=tokens.findIndex(t=>cleanToken(t).toLowerCase()===restartWord);
-  if(ai>=0){const before=tokens.slice(0,ai).join(" ").trim(),after=tokens.slice(ai+1).join(" ").trim();if(before&&!firstAnswer){firstAnswer=before;document.getElementById("firstAnswer").textContent=firstAnswer}if(!canAgainNow()||restartCount>=Number(CONFIG.MAX_RESTART)){finalAnswer=before||cleaned;finalizeCurrentAnswer();return}restartCount++;document.getElementById("restartInfo").textContent="RESTART = "+restartCount;if(after){finalAnswer=after;document.getElementById("finalAnswer").textContent=finalAnswer;finalizeCurrentAnswer();return}finalAnswer="";document.getElementById("finalAnswer").textContent="WAITING FOR REANSWER...";document.getElementById("heard").textContent="AGAIN → answer again";startRecognitionSession("REANSWER",false);return}
+  if(ai>=0){const before=tokens.slice(0,ai).join(" ").trim(),after=tokens.slice(ai+1).join(" ").trim();if(before&&!firstAnswer){firstAnswer=before;document.getElementById("firstAnswer").textContent=firstAnswer}if(!canAgainNow()||restartCount>=Number(CONFIG.MAX_RESTART)){finalAnswer=before||cleaned;finalizeCurrentAnswer();return}restartCount++;document.getElementById("restartInfo").textContent="SỐ LẦN LÀM LẠI = "+restartCount;if(after){finalAnswer=after;document.getElementById("finalAnswer").textContent=finalAnswer;finalizeCurrentAnswer();return}finalAnswer="";document.getElementById("finalAnswer").textContent="ĐANG CHỜ TRẢ LỜI LẠI...";document.getElementById("heard").textContent="AGAIN → hãy trả lời lại";startRecognitionSession("TRẢ LỜI LẠI",false);return}
   if(mode==="AGAIN_WINDOW"){finalizeCurrentAnswer();return}
   if(restartCount===0){firstAnswer=cleaned;finalAnswer=cleaned;document.getElementById("firstAnswer").textContent=firstAnswer;document.getElementById("finalAnswer").textContent=finalAnswer;startRecognitionSession("AGAIN_WINDOW",false);return}
   finalAnswer=cleaned;document.getElementById("finalAnswer").textContent=finalAnswer;finalizeCurrentAnswer();
@@ -147,7 +148,7 @@ function canAgainNow(){
 }
 function handleAgain(){
   if(!canAgainNow() || restartCount>=Number(CONFIG.MAX_RESTART)){
-    document.getElementById("restartInfo").textContent="AGAIN WINDOW CLOSED";
+    document.getElementById("restartInfo").textContent="ĐÃ HẾT QUYỀN DÙNG AGAIN";
     finalizeCurrentAnswer();
     return;
   }
@@ -155,24 +156,25 @@ function handleAgain(){
   restartCount++;
   clearTimeout(silenceTimer);
 
-  document.getElementById("restartInfo").textContent="RESTART = "+restartCount;
+  document.getElementById("restartInfo").textContent="SỐ LẦN LÀM LẠI = "+restartCount;
   finalAnswer="";
-  document.getElementById("finalAnswer").textContent="WAITING FOR REANSWER...";
-  document.getElementById("heard").textContent="AGAIN → answer again";
-  document.getElementById("status").textContent="REANSWER";
+  document.getElementById("finalAnswer").textContent="ĐANG CHỜ TRẢ LỜI LẠI...";
+  document.getElementById("heard").textContent="AGAIN → hãy trả lời lại";
+  document.getElementById("status").textContent="TRẢ LỜI LẠI";
 
-  startRecognitionSession("REANSWER",false);
+  startRecognitionSession("TRẢ LỜI LẠI",false);
 }
-function finalizeCurrentAnswer(){if(!testRunning||responseLocked)return;if(!finalAnswer&&currentUtterance)finalAnswer=currentUtterance;document.getElementById("finalAnswer").textContent=finalAnswer||"(no text)";lockResponse("ANSWER")}
+function finalizeCurrentAnswer(){if(!testRunning||responseLocked)return;if(!finalAnswer&&currentUtterance)finalAnswer=currentUtterance;document.getElementById("finalAnswer").textContent=finalAnswer||"(không nhận được chữ)";lockResponse("ANSWER")}
 function nextNow(){if(!testRunning||responseLocked)return;if(!finalAnswer&&currentUtterance)finalAnswer=currentUtterance;lockResponse("NEXT")}
 
 function lockResponse(reason){
   if(!testRunning||responseLocked)return;responseLocked=true;clearTimers();safeAbortRecognition();const item=WORDS[currentIndex];let status="",failReason="";
   const reaction=firstSpeechTime!==null&&wordStartTime!==null?(firstSpeechTime-wordStartTime)/1000:null;
-  if(!voiceDetectedCurrent||reason==="REACTION"){status="RED";failReason=reason==="REACTION"?"REACTION":"NO_VOICE";document.getElementById("heard").textContent=voiceDetectedCurrent?(currentUtterance||"(voice)"):"(no voice)";}
+  if(!voiceDetectedCurrent||reason==="REACTION"){status="RED";failReason=reason==="REACTION"?"REACTION":"NO_VOICE";document.getElementById("heard").textContent=voiceDetectedCurrent?(currentUtterance||"(có giọng nói)"):"(không có giọng nói)";}
   else if(finalAnswer&&isCorrectAnswer(finalAnswer,item.english)){status="PASS";}
   else{status="PENDING";failReason=finalAnswer?"STT_MISMATCH":"VOICE_NO_TEXT";}
-  document.getElementById("status").textContent=status+(reason==="NEXT"?" – NEXT":"");
+  const statusText=status==="PASS"?"XANH DƯƠNG / ĐẠT":status==="PENDING"?"XANH LÁ / CHỜ DUYỆT":"ĐỎ / KHÔNG CÓ CÂU TRẢ LỜI";
+  document.getElementById("status").textContent=statusText+(reason==="NEXT"?" – ĐÃ CHỐT":"");
   finalResults.push({studentId:currentStudentId,coreId:item.coreId,vietnamese:item.vietnamese,english:item.english,source:item.source,reaction:reaction,firstAnswer:firstAnswer||"",finalAnswer:finalAnswer||"",restartCount:restartCount,voiceDetected:voiceDetectedCurrent,failReason:failReason,result:status});
   setTimeout(()=>{if(!testRunning)return;setTimeout(()=>{if(!testRunning)return;currentIndex++;prepareWord()},Number(CONFIG.NEXT_DELAY_SEC)*1000)},Number(CONFIG.RESULT_DISPLAY_SEC)*1000);
 }
@@ -186,21 +188,21 @@ function normalizeAnswer(text){return String(text||"").trim().toLowerCase().repl
 function isCorrectAnswer(a,b){return normalizeAnswer(a)===normalizeAnswer(b)}
 function cleanToken(t){return String(t||"").replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g,"")}
 
-function stopTest(){testRunning=false;clearTimers();safeAbortRecognition();document.getElementById("status").textContent="TEST STOPPED"}
+function stopTest(){testRunning=false;clearTimers();safeAbortRecognition();document.getElementById("status").textContent="ĐÃ DỪNG BÀI"}
 function finishTest(){
-  testRunning=false;clearTimers();safeAbortRecognition();document.getElementById("progress").textContent=WORDS.length+" / "+WORDS.length;document.getElementById("vietnamese").textContent="FINISHED";document.getElementById("timer").textContent="";
+  testRunning=false;clearTimers();safeAbortRecognition();document.getElementById("progress").textContent=WORDS.length+" / "+WORDS.length;document.getElementById("vietnamese").textContent="HOÀN THÀNH";document.getElementById("timer").textContent="";
   const total=finalResults.length,pass=finalResults.filter(r=>r.result==="PASS").length,pending=finalResults.filter(r=>r.result==="PENDING").length,red=total-pass-pending;
-  document.getElementById("status").innerHTML="FINAL COMPLETE – Total: "+total+" &nbsp; <span class='resultBlue'>BLUE: "+pass+"</span> &nbsp; <span class='resultGreen'>GREEN: "+pending+"</span> &nbsp; <span class='resultRed'>RED: "+red+"</span>";
+  document.getElementById("status").innerHTML="HOÀN THÀNH BÀI CUỐI NGÀY – Tổng: "+total+" &nbsp; <span class='resultBlue'>XANH DƯƠNG / ĐẠT: "+pass+"</span> &nbsp; <span class='resultGreen'>XANH LÁ / CHỜ DUYỆT: "+pending+"</span> &nbsp; <span class='resultRed'>ĐỎ: "+red+"</span>";
   document.getElementById("clipBox").classList.remove("hidden");document.getElementById("nextBtn").classList.add("hidden");document.getElementById("stopBtn").classList.add("hidden");submitFinalResults();
 }
 
 function submitFinalResults(){if(!finalResults.length)return;postPayload({api:"final-submit",studentId:currentStudentId,day:currentDay,sessionId:sessionId,startTime:testStartIso,results:finalResults})}
-function submitClip(){const u=String(document.getElementById("clipUrl").value||"").trim();if(!/^https?:\/\//i.test(u)){alert("Paste a valid http/https clip link.");return}postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u})}
+function submitClip(){const u=String(document.getElementById("clipUrl").value||"").trim();if(!/^https?:\/\//i.test(u)){alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");return}postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u})}
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
-function handleBackendMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const box=document.getElementById("submitMsg");if(d.ok){box.textContent=d.clipSaved?"Clip link saved.":("FINAL saved. BLUE="+(d.blue??"")+" GREEN="+(d.green??"")+" RED="+(d.red??""));}else box.textContent="BACKEND ERROR: "+String(d.error||"Unknown error")}
+function handleBackendMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const box=document.getElementById("submitMsg");if(d.ok){box.textContent=d.clipSaved?"Đã lưu link video.":("Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??""));}else box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định")}
 function safeAbortRecognition(){if(!recognition)return;try{recognition.onend=null;recognition.abort()}catch(e){}recognition=null}
 function makeSessionId(){return currentStudentId.replace(/\s+/g,"_")+"-D"+currentDay+"-"+Date.now()}
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),timer=setTimeout(()=>cleanup(new Error("API timeout")),15000);function cleanup(err,data){clearTimeout(timer);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>cleanup(null,d);s.onerror=()=>cleanup(new Error("API load failed"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
+function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),timer=setTimeout(()=>cleanup(new Error("Hết thời gian chờ hệ thống phản hồi")),15000);function cleanup(err,data){clearTimeout(timer);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>cleanup(null,d);s.onerror=()=>cleanup(new Error("Không tải được dữ liệu từ hệ thống"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
 </script>
 </body>
 </html>
