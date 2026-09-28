@@ -34,7 +34,44 @@ let DATA=null;
 document.addEventListener("DOMContentLoaded",()=>{document.getElementById("loadBtn").addEventListener("click",loadData);document.getElementById("submitBtn").addEventListener("click",submitData);window.addEventListener("message",handleMessage);const p=new URLSearchParams(location.search),s=String(p.get("student")||"").trim(),d=Number(p.get("day")),m=String(p.get("mode")||"").toLowerCase();if(s)document.getElementById("studentId").value=s;if(d)document.getElementById("day").value=String(d);if(m==="morning"||m==="drill")document.getElementById("mode").value=m;if(s&&d)loadData();});
 async function loadData(){const sid=String(document.getElementById("studentId").value||"").trim(),day=Number(document.getElementById("day").value),mode=document.getElementById("mode").value;if(!sid||!day){alert("STUDENT_ID and DAY are required.");return}const b=document.getElementById("loadBtn");b.disabled=true;b.textContent="LOADING...";try{DATA=await jsonp(API_BASE+"?api=practice-data&mode="+encodeURIComponent(mode)+"&student="+encodeURIComponent(sid)+"&day="+day);if(!DATA||DATA.ok===false)throw new Error(DATA&&DATA.error||"Invalid data");renderData()}catch(e){alert(String(e.message||e))}finally{b.disabled=false;b.textContent="LOAD"}}
 function renderData(){const card=document.getElementById("workCard"),box=document.getElementById("questions"),title=document.getElementById("title");card.classList.remove("hidden");title.textContent=DATA.mode+" – DAY "+DATA.day+" – "+(DATA.count||0)+" terms";box.innerHTML="";if(!DATA.items||!DATA.items.length){box.innerHTML='<div class="empty">'+(DATA.message||"Nothing to practice. All current drill items are REPAIRED.")+'</div>';document.getElementById("submitBtn").classList.add("hidden");return}document.getElementById("submitBtn").classList.remove("hidden");DATA.items.forEach((it,idx)=>{const r=document.createElement("div");r.className="q";r.innerHTML='<div class="id">'+String(idx+1).padStart(2,"0")+'</div><div><div class="vn"></div><div class="tag"></div></div><input autocomplete="off" placeholder="English">';r.querySelector(".vn").textContent=it.vietnamese;r.querySelector(".tag").textContent="CORE "+it.coreId+" · "+it.source+(it.repairStatus?" · "+it.repairStatus:"");r.querySelector("input").dataset.coreId=it.coreId;box.appendChild(r)});document.getElementById("msg").textContent=""}
-function submitData(){if(!DATA||!DATA.items||!DATA.items.length)return;const inputs=[...document.querySelectorAll("#questions input[data-core-id]")],answers=inputs.map(i=>({coreId:Number(i.dataset.coreId),answer:String(i.value||"").trim()}));const api=DATA.mode==="MORNING"?"morning-submit":"drill-submit";postPayload({api:api,studentId:DATA.studentId,day:DATA.day,answers:answers});document.getElementById("msg").textContent="Submitting..."}
+async function submitData(){
+  if(!DATA||!DATA.items||!DATA.items.length)return;
+
+  const btn=document.getElementById("submitBtn");
+  const msg=document.getElementById("msg");
+  const inputs=[...document.querySelectorAll("#questions input[data-core-id]")];
+  const answers=inputs.map(i=>({
+    coreId:Number(i.dataset.coreId),
+    answer:String(i.value||"").trim()
+  }));
+
+  const api=DATA.mode==="MORNING"?"morning-submit":"drill-submit";
+
+  btn.disabled=true;
+  btn.textContent="SUBMITTING...";
+  msg.textContent="Submitting...";
+
+  postPayload({
+    api:api,
+    studentId:DATA.studentId,
+    day:DATA.day,
+    answers:answers
+  });
+
+  setTimeout(async()=>{
+    try{
+      await loadData();
+      msg.textContent=DATA.mode==="DRILL"
+        ? "Drill saved. Current repair status updated."
+        : "Morning saved. Repair list updated.";
+    }catch(e){
+      msg.textContent="Saved, but reload failed. Press LOAD to refresh.";
+    }finally{
+      btn.disabled=false;
+      btn.textContent="SUBMIT";
+    }
+  },3000);
+}
 function handleMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const m=document.getElementById("msg");if(!d.ok){m.textContent="ERROR: "+String(d.error||"Unknown error");return}if(d.mode==="MORNING"){m.textContent="Morning saved. PASS="+d.pass+" · REPAIR NEEDED="+d.repairNeeded+". Switch to DRILL to practice the missed terms.";}else{m.textContent="Drill saved. REPAIRED="+d.repaired+" · still NEEDED="+d.remaining+". Reloading current drill list...";setTimeout(loadData,700)}}
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
 function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),t=setTimeout(()=>done(new Error("API timeout")),15000);function done(err,data){clearTimeout(t);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>done(null,d);s.onerror=()=>done(new Error("API load failed"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
