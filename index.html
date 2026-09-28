@@ -56,7 +56,7 @@
 const API_BASE = window.IEC_API_BASE || "https://script.google.com/macros/s/AKfycby_Z0_bmGoBN7rULALxCR-D8xRHEWa66-CeJNAcHtRaIuNNoeP7A1HJSpNZc4Xi1OUn/exec";
 let CONFIG=null, WORDS=[];
 let recognition=null,currentIndex=0,testRunning=false,responseLocked=false;
-let wordStartTime=null,firstSpeechTime=null,reactionClock=null,reactionDeadline=null,maxSpeechTimer=null,silenceTimer=null;
+let wordStartTime=null,firstSpeechTime=null,sessionSpeechStartTime=null,reactionClock=null,reactionDeadline=null,maxSpeechTimer=null,silenceTimer=null;
 let currentUtterance="",firstAnswer="",finalAnswer="",restartCount=0,speechSeenInSession=false,voiceDetectedCurrent=false;
 let finalResults=[],currentStudentId="",currentDay=0,sessionId="",testStartIso="";
 
@@ -103,7 +103,7 @@ async function ensureMicrophonePermission(){
 
 function prepareWord(){
   if(!testRunning)return;if(currentIndex>=WORDS.length){finishTest();return}
-  clearTimers();safeAbortRecognition();responseLocked=false;wordStartTime=null;firstSpeechTime=null;currentUtterance="";firstAnswer="";finalAnswer="";restartCount=0;speechSeenInSession=false;voiceDetectedCurrent=false;
+  clearTimers();safeAbortRecognition();responseLocked=false;wordStartTime=null;firstSpeechTime=null;sessionSpeechStartTime=null;currentUtterance="";firstAnswer="";finalAnswer="";restartCount=0;speechSeenInSession=false;voiceDetectedCurrent=false;
   document.getElementById("progress").textContent=(currentIndex+1)+" / "+WORDS.length;document.getElementById("vietnamese").textContent="WAITING FOR MICROPHONE...";document.getElementById("timer").textContent="--";document.getElementById("heard").textContent="---";document.getElementById("firstAnswer").textContent="---";document.getElementById("finalAnswer").textContent="---";document.getElementById("restartInfo").textContent="";document.getElementById("status").textContent="Preparing microphone...";
   startRecognitionSession("PRIMARY",true);
 }
@@ -114,7 +114,7 @@ function startRecognitionSession(mode,showWordOnStart){
     document.getElementById("heard").textContent="Listening...";document.getElementById("status").textContent=mode==="REANSWER"?"LISTENING – REANSWER":mode==="AGAIN_WINDOW"?"Say AGAIN now if you want to correct":"LISTENING";
     if(mode==="AGAIN_WINDOW"){clearTimeout(silenceTimer);silenceTimer=setTimeout(()=>{if(!responseLocked&&testRunning){safeAbortRecognition();finalizeCurrentAnswer();}},Number(CONFIG.SILENCE_END_SEC)*1000);}
   };
-  recognition.onspeechstart=function(){if(!testRunning||responseLocked)return;speechSeenInSession=true;voiceDetectedCurrent=true;clearTimeout(silenceTimer);if(firstSpeechTime===null){firstSpeechTime=performance.now();const reaction=(firstSpeechTime-wordStartTime)/1000;stopReactionTimer();document.getElementById("timer").textContent=reaction.toFixed(2)+" s";}startMaxSpeechTimer();};
+  recognition.onspeechstart=function(){if(!testRunning||responseLocked)return;sessionSpeechStartTime=performance.now();speechSeenInSession=true;voiceDetectedCurrent=true;clearTimeout(silenceTimer);if(firstSpeechTime===null){firstSpeechTime=performance.now();const reaction=(firstSpeechTime-wordStartTime)/1000;stopReactionTimer();document.getElementById("timer").textContent=reaction.toFixed(2)+" s";}startMaxSpeechTimer();};
   recognition.onresult=function(event){if(!testRunning||responseLocked)return;let t="";for(let i=0;i<event.results.length;i++)t+=event.results[i][0].transcript+" ";currentUtterance=t.trim().replace(/\s+/g," ");document.getElementById("heard").textContent=currentUtterance||"Listening...";};
   recognition.onspeechend=function(){if(!testRunning||responseLocked)return;clearTimeout(maxSpeechTimer);maxSpeechTimer=null;document.getElementById("status").textContent="Processing...";};
   recognition.onerror=function(event){if(!testRunning||responseLocked)return;if(event.error==="no-speech")return;if(event.error==="not-allowed"||event.error==="service-not-allowed"){testRunning=false;clearTimers();alert("MICROPHONE NOT ALLOWED. Allow microphone and reload.");return}document.getElementById("status").textContent="MIC ERROR: "+event.error;};
@@ -134,10 +134,35 @@ function processUtterance(text,mode){
   if(restartCount===0){firstAnswer=cleaned;finalAnswer=cleaned;document.getElementById("firstAnswer").textContent=firstAnswer;document.getElementById("finalAnswer").textContent=finalAnswer;startRecognitionSession("AGAIN_WINDOW",false);return}
   finalAnswer=cleaned;document.getElementById("finalAnswer").textContent=finalAnswer;finalizeCurrentAnswer();
 }
+function canAgainNow(){
+  if(wordStartTime===null)return false;
 
-function canAgainNow(){if(wordStartTime===null)return false;return ((performance.now()-wordStartTime)/1000)<=Number(CONFIG.REACTION_LIMIT_SEC)}
-function handleAgain(){if(!canAgainNow()||restartCount>=Number(CONFIG.MAX_RESTART)){document.getElementById("restartInfo").textContent="AGAIN WINDOW CLOSED";finalizeCurrentAnswer();return}restartCount++;clearTimeout(silenceTimer);document.getElementById("restartInfo").textContent="RESTART = "+restartCount;finalAnswer="";document.getElementById("finalAnswer").textContent="WAITING FOR REANSWER...";document.getElementById("heard").textContent="AGAIN → answer again";document.getElementById("status").textContent="REANSWER";startRecognitionSession("REANSWER",false)}
+  const checkTime =
+    sessionSpeechStartTime !== null
+      ? sessionSpeechStartTime
+      : performance.now();
 
+  return ((checkTime-wordStartTime)/1000)
+    <= Number(CONFIG.REACTION_LIMIT_SEC);
+}
+function handleAgain(){
+  if(!canAgainNow() || restartCount>=Number(CONFIG.MAX_RESTART)){
+    document.getElementById("restartInfo").textContent="AGAIN WINDOW CLOSED";
+    finalizeCurrentAnswer();
+    return;
+  }
+
+  restartCount++;
+  clearTimeout(silenceTimer);
+
+  document.getElementById("restartInfo").textContent="RESTART = "+restartCount;
+  finalAnswer="";
+  document.getElementById("finalAnswer").textContent="WAITING FOR REANSWER...";
+  document.getElementById("heard").textContent="AGAIN → answer again";
+  document.getElementById("status").textContent="REANSWER";
+
+  startRecognitionSession("REANSWER",false);
+}
 function finalizeCurrentAnswer(){if(!testRunning||responseLocked)return;if(!finalAnswer&&currentUtterance)finalAnswer=currentUtterance;document.getElementById("finalAnswer").textContent=finalAnswer||"(no text)";lockResponse("ANSWER")}
 function nextNow(){if(!testRunning||responseLocked)return;if(!finalAnswer&&currentUtterance)finalAnswer=currentUtterance;lockResponse("NEXT")}
 
