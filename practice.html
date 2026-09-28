@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>IEC – MORNING / DRILL</title>
+<title>IEC – HỌC & LUYỆN TẬP V2</title>
 <style>
-*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;color:#202124}.wrap{max-width:920px;margin:28px auto;padding:0 16px}.card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.1);margin-bottom:16px}h1{margin:0 0 8px}.sub{color:#5f6368;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 150px 150px;gap:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}}label{font-weight:700;display:block;margin-bottom:5px}input,select{width:100%;padding:11px;border:1px solid #ccd1d9;border-radius:8px;font-size:15px}button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer}.primary{background:#1a73e8;color:#fff}.secondary{background:#188038;color:#fff}.q{display:grid;grid-template-columns:55px 1.2fr 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}@media(max-width:650px){.q{grid-template-columns:44px 1fr}.q input{grid-column:1/3}}.id{color:#5f6368;font-weight:700}.vn{font-weight:700}.tag{font-size:12px;color:#5f6368}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.msg{white-space:pre-wrap;background:#f8f9fa;border-radius:8px;padding:10px;margin-top:12px}.hidden{display:none!important}.empty{padding:20px;text-align:center;color:#5f6368}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;color:#202124}.wrap{max-width:920px;margin:28px auto;padding:0 16px}.card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.1);margin-bottom:16px}h1{margin:0 0 4px}.dev-note{font-size:11px;color:#9aa0a6;font-weight:400;text-align:center;margin:2px 0 14px}.sub{color:#5f6368;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 170px 190px;gap:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}}label{font-weight:700;display:block;margin-bottom:5px}input,select{width:100%;padding:11px;border:1px solid #ccd1d9;border-radius:8px;font-size:15px}input[readonly]{background:#f8f9fa;color:#3c4043;cursor:not-allowed}button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer}.primary{background:#1a73e8;color:#fff}.secondary{background:#188038;color:#fff}.q{display:grid;grid-template-columns:55px 1.2fr 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}@media(max-width:650px){.q{grid-template-columns:44px 1fr}.q input{grid-column:1/3}}.id{color:#5f6368;font-weight:700}.vn{font-weight:700}.tag{font-size:12px;color:#5f6368}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.msg{white-space:pre-wrap;background:#f8f9fa;border-radius:8px;padding:10px;margin-top:12px}.hidden{display:none!important}.empty{padding:20px;text-align:center;color:#5f6368}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="card">
-    <h1>IEC – MORNING / DRILL</h1>
-    <p class="sub">Morning checks today's NEW terms. Drill can be repeated without limit; only the current status is stored, not every attempt.</p>
+    <h1>IEC – HỌC & LUYỆN TẬP V2</h1>
+    <div class="dev-note">Phát triển bởi TS. Lân NGÔ – Khoa Máy tàu biển, Trường Đại học Hàng hải Việt Nam</div>
+    <p class="sub">Bài buổi sáng dùng để kiểm tra các từ MỚI trong ngày. Phần luyện lại có thể làm nhiều lần tùy nhu cầu; hệ thống chỉ ghi nhận kết quả gần nhất, không lưu từng lần làm trước đó.</p>
     <div class="grid">
-      <div><label>STUDENT_ID</label><input id="studentId" placeholder="TEST01"></div>
-      <div><label>DAY</label><input id="day" type="number" min="1" value="1"></div>
-      <div><label>MODE</label><select id="mode"><option value="morning">MORNING</option><option value="drill">DRILL</option></select></div>
+      <div><label>MÃ SINH VIÊN</label><input id="studentId" placeholder="Ví dụ: TEST01"></div>
+      <div><label>NGÀY THAM GIA IEC</label><input id="day" type="text" value="" readonly></div>
+      <div><label>CHẾ ĐỘ</label><select id="mode"><option value="morning">BÀI BUỔI SÁNG</option><option value="drill">LUYỆN LẠI</option></select></div>
     </div>
-    <div class="actions"><button id="loadBtn" class="primary">LOAD</button></div>
+    <div class="actions"><button id="loadBtn" class="primary">MỞ BÀI</button></div>
   </div>
   <div class="card hidden" id="workCard">
     <h2 id="title">---</h2><div id="questions"></div>
-    <div class="actions"><button id="submitBtn" class="secondary">SUBMIT</button></div>
+    <div class="actions"><button id="submitBtn" class="secondary">NỘP BÀI</button></div>
     <div id="msg" class="msg"></div>
   </div>
 </div>
@@ -31,50 +32,41 @@
 "use strict";
 const API_BASE=window.IEC_API_BASE||"https://script.google.com/macros/s/AKfycby_Z0_bmGoBN7rULALxCR-D8xRHEWa66-CeJNAcHtRaIuNNoeP7A1HJSpNZc4Xi1OUn/exec";
 let DATA=null;
-document.addEventListener("DOMContentLoaded",()=>{document.getElementById("loadBtn").addEventListener("click",loadData);document.getElementById("submitBtn").addEventListener("click",submitData);window.addEventListener("message",handleMessage);const p=new URLSearchParams(location.search),s=String(p.get("student")||"").trim(),d=Number(p.get("day")),m=String(p.get("mode")||"").toLowerCase();if(s)document.getElementById("studentId").value=s;if(d)document.getElementById("day").value=String(d);if(m==="morning"||m==="drill")document.getElementById("mode").value=m;if(s&&d)loadData();});
-async function loadData(){const sid=String(document.getElementById("studentId").value||"").trim(),day=Number(document.getElementById("day").value),mode=document.getElementById("mode").value;if(!sid||!day){alert("STUDENT_ID and DAY are required.");return}const b=document.getElementById("loadBtn");b.disabled=true;b.textContent="LOADING...";try{DATA=await jsonp(API_BASE+"?api=practice-data&mode="+encodeURIComponent(mode)+"&student="+encodeURIComponent(sid)+"&day="+day);if(!DATA||DATA.ok===false)throw new Error(DATA&&DATA.error||"Invalid data");renderData()}catch(e){alert(String(e.message||e))}finally{b.disabled=false;b.textContent="LOAD"}}
-function renderData(){const card=document.getElementById("workCard"),box=document.getElementById("questions"),title=document.getElementById("title");card.classList.remove("hidden");title.textContent=DATA.mode+" – DAY "+DATA.day+" – "+(DATA.count||0)+" terms";box.innerHTML="";if(!DATA.items||!DATA.items.length){box.innerHTML='<div class="empty">'+(DATA.message||"Nothing to practice. All current drill items are REPAIRED.")+'</div>';document.getElementById("submitBtn").classList.add("hidden");return}document.getElementById("submitBtn").classList.remove("hidden");DATA.items.forEach((it,idx)=>{const r=document.createElement("div");r.className="q";r.innerHTML='<div class="id">'+String(idx+1).padStart(2,"0")+'</div><div><div class="vn"></div><div class="tag"></div></div><input autocomplete="off" placeholder="English">';r.querySelector(".vn").textContent=it.vietnamese;r.querySelector(".tag").textContent="CORE "+it.coreId+" · "+it.source+(it.repairStatus?" · "+it.repairStatus:"");r.querySelector("input").dataset.coreId=it.coreId;box.appendChild(r)});document.getElementById("msg").textContent=""}
+const MODE_LABEL={MORNING:"BÀI BUỔI SÁNG",DRILL:"LUYỆN LẠI"};
+const SOURCE_LABEL={NEW:"MỚI",RED:"ĐỎ"};
+const REPAIR_LABEL={NEEDED:"CẦN LUYỆN LẠI",REPAIRED:"ĐÃ LUYỆN ĐẠT",NOT_NEEDED:"KHÔNG CẦN LUYỆN LẠI"};
+document.addEventListener("DOMContentLoaded",()=>{document.getElementById("loadBtn").addEventListener("click",loadData);document.getElementById("submitBtn").addEventListener("click",submitData);window.addEventListener("message",handleMessage);const p=new URLSearchParams(location.search),s=String(p.get("student")||"").trim(),d=Number(p.get("day")),m=String(p.get("mode")||"").toLowerCase();if(s)document.getElementById("studentId").value=s;if(d>0)document.getElementById("day").value="NGÀY "+d;if(m==="morning"||m==="drill")document.getElementById("mode").value=m;if(s&&d)loadData();});
+async function loadData(){const sid=String(document.getElementById("studentId").value||"").trim(),p=new URLSearchParams(location.search),day=Number(p.get("day")),mode=document.getElementById("mode").value;if(!sid){alert("Mã sinh viên bắt buộc phải có.");return}if(!day){alert("Hệ thống chưa xác định được ngày tham gia IEC. Hãy mở đúng liên kết được gửi trong ngày.");return}const b=document.getElementById("loadBtn");b.disabled=true;b.textContent="ĐANG MỞ...";try{DATA=await jsonp(API_BASE+"?api=practice-data&mode="+encodeURIComponent(mode)+"&student="+encodeURIComponent(sid)+"&day="+day);if(!DATA||DATA.ok===false)throw new Error(DATA&&DATA.error||"Dữ liệu không hợp lệ");renderData()}catch(e){alert(String(e.message||e))}finally{b.disabled=false;b.textContent="MỞ BÀI"}}
+function renderData(){const card=document.getElementById("workCard"),box=document.getElementById("questions"),title=document.getElementById("title");card.classList.remove("hidden");const modeLabel=MODE_LABEL[String(DATA.mode||"").toUpperCase()]||String(DATA.mode||"");title.textContent=modeLabel+" – NGÀY "+DATA.day+" – "+(DATA.count||0)+" TỪ";box.innerHTML="";if(!DATA.items||!DATA.items.length){box.innerHTML='<div class="empty">'+(DATA.message?translateMessage(DATA.message):"Hiện không có từ nào cần luyện. Các từ cần sửa hiện tại đã được luyện đạt.")+'</div>';document.getElementById("submitBtn").classList.add("hidden");return}document.getElementById("submitBtn").classList.remove("hidden");DATA.items.forEach((it,idx)=>{const r=document.createElement("div");r.className="q";r.innerHTML='<div class="id">'+String(idx+1).padStart(2,"0")+'</div><div><div class="vn"></div><div class="tag"></div></div><input autocomplete="off" placeholder="Nhập thuật ngữ tiếng Anh">';r.querySelector(".vn").textContent=it.vietnamese;const source=SOURCE_LABEL[String(it.source||"").toUpperCase()]||it.source||"";const repair=REPAIR_LABEL[String(it.repairStatus||"").toUpperCase()]||it.repairStatus||"";r.querySelector(".tag").textContent="MÃ TỪ "+it.coreId+(source?" · "+source:"")+(repair?" · "+repair:"");r.querySelector("input").dataset.coreId=it.coreId;box.appendChild(r)});document.getElementById("msg").textContent=""}
+function translateMessage(v){const s=String(v||"");if(s.includes("REFRESH DAY"))return"NGÀY ÔN TẬP – hôm nay không có từ MỚI.";if(s.includes("no NEW"))return"Hôm nay không có từ MỚI.";return s}
 async function submitData(){
   if(!DATA||!DATA.items||!DATA.items.length)return;
-
   const btn=document.getElementById("submitBtn");
   const msg=document.getElementById("msg");
   const inputs=[...document.querySelectorAll("#questions input[data-core-id]")];
-  const answers=inputs.map(i=>({
-    coreId:Number(i.dataset.coreId),
-    answer:String(i.value||"").trim()
-  }));
-
-  const api=DATA.mode==="MORNING"?"morning-submit":"drill-submit";
-
+  const answers=inputs.map(i=>({coreId:Number(i.dataset.coreId),answer:String(i.value||"").trim()}));
+  const api=String(DATA.mode||"").toUpperCase()==="MORNING"?"morning-submit":"drill-submit";
   btn.disabled=true;
-  btn.textContent="SUBMITTING...";
-  msg.textContent="Submitting...";
-
-  postPayload({
-    api:api,
-    studentId:DATA.studentId,
-    day:DATA.day,
-    answers:answers
-  });
-
+  btn.textContent="ĐANG NỘP...";
+  msg.textContent="Đang nộp bài...";
+  postPayload({api:api,studentId:DATA.studentId,day:DATA.day,answers:answers});
   setTimeout(async()=>{
     try{
       await loadData();
-      msg.textContent=DATA.mode==="DRILL"
-        ? "Drill saved. Current repair status updated."
-        : "Morning saved. Repair list updated.";
+      msg.textContent=String(DATA.mode||"").toUpperCase()==="DRILL"
+        ? "Đã lưu bài luyện lại. Kết quả gần nhất đã được cập nhật."
+        : "Đã lưu bài buổi sáng. Danh sách từ cần luyện lại đã được cập nhật.";
     }catch(e){
-      msg.textContent="Saved, but reload failed. Press LOAD to refresh.";
+      msg.textContent="Đã lưu, nhưng chưa tải lại được. Bấm MỞ BÀI để làm mới.";
     }finally{
       btn.disabled=false;
-      btn.textContent="SUBMIT";
+      btn.textContent="NỘP BÀI";
     }
   },3000);
 }
-function handleMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const m=document.getElementById("msg");if(!d.ok){m.textContent="ERROR: "+String(d.error||"Unknown error");return}if(d.mode==="MORNING"){m.textContent="Morning saved. PASS="+d.pass+" · REPAIR NEEDED="+d.repairNeeded+". Switch to DRILL to practice the missed terms.";}else{m.textContent="Drill saved. REPAIRED="+d.repaired+" · still NEEDED="+d.remaining+". Reloading current drill list...";setTimeout(loadData,700)}}
+function handleMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const m=document.getElementById("msg");if(!d.ok){m.textContent="LỖI: "+String(d.error||"Không xác định");return}if(d.mode==="MORNING"){m.textContent="Đã lưu bài buổi sáng. ĐẠT="+d.pass+" · CẦN LUYỆN LẠI="+d.repairNeeded+". Chuyển sang LUYỆN LẠI để luyện các từ chưa đạt.";}else{m.textContent="Đã lưu bài luyện lại. ĐÃ LUYỆN ĐẠT="+d.repaired+" · CÒN CẦN LUYỆN="+d.remaining+". Đang tải lại danh sách...";setTimeout(loadData,700)}}
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),t=setTimeout(()=>done(new Error("API timeout")),15000);function done(err,data){clearTimeout(t);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>done(null,d);s.onerror=()=>done(new Error("API load failed"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
+function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),t=setTimeout(()=>done(new Error("Hết thời gian chờ hệ thống phản hồi")),15000);function done(err,data){clearTimeout(t);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>done(null,d);s.onerror=()=>done(new Error("Không tải được dữ liệu từ hệ thống"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
 </script>
 </body>
 </html>
