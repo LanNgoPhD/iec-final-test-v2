@@ -60,6 +60,9 @@ let recognition=null,currentIndex=0,testRunning=false,responseLocked=false;
 let wordStartTime=null,firstSpeechTime=null,sessionSpeechStartTime=null,reactionClock=null,reactionDeadline=null,maxSpeechTimer=null,silenceTimer=null;
 let currentUtterance="",firstAnswer="",finalAnswer="",restartCount=0,speechSeenInSession=false,voiceDetectedCurrent=false;
 let finalResults=[],currentStudentId="",currentDay=0,sessionId="",testStartIso="";
+const URL_PARAMS=new URLSearchParams(location.search);
+const URL_STUDENT=String(URL_PARAMS.get("student")||"").trim();
+const URL_DAY=Number(URL_PARAMS.get("day"));
 
 document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("startBtn").addEventListener("click",startTest);
@@ -67,30 +70,56 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("nextBtn").addEventListener("click",nextNow);
   document.getElementById("clipBtn").addEventListener("click",submitClip);
   window.addEventListener("message",handleBackendMessage);
-  const p=new URLSearchParams(location.search); const s=String(p.get("student")||"").trim(); const d=Number(p.get("day"));
-  if(s) document.getElementById("studentId").value=s; if(d>0) document.getElementById("day").value="NGÀY "+d;
+
+  const studentInput=document.getElementById("studentId");
+  if(URL_STUDENT){
+    studentInput.value=URL_STUDENT;
+    studentInput.readOnly=true;
+    studentInput.title="Mã sinh viên được khóa theo liên kết đã cấp";
+  }
+  if(URL_DAY>0) document.getElementById("day").value="NGÀY "+URL_DAY;
+
+  restoreClipSubmitState();
   loadConfig();
 });
 
 async function loadConfig(){
   const b=document.getElementById("startBtn"); b.disabled=true;
-  try{CONFIG=await jsonp(API_BASE+"?api=final-config"); if(!CONFIG||CONFIG.ok===false) throw new Error(CONFIG&&CONFIG.error||"Invalid config");
+  try{
+    CONFIG=await jsonp(API_BASE+"?api=final-config",30000);
+    if(!CONFIG||CONFIG.ok===false) throw new Error(CONFIG&&CONFIG.error||"Invalid config");
     b.disabled=false;b.textContent="BẮT ĐẦU";
-  }catch(e){b.textContent="LỖI CẤU HÌNH";document.getElementById("status").textContent=String(e.message||e);}
+  }catch(e){
+    b.disabled=true;b.textContent="LỖI CẤU HÌNH";
+    document.getElementById("status").textContent=String(e.message||e);
+  }
 }
 
 async function startTest(){
   if(testRunning)return;
-  const b=document.getElementById("startBtn"); currentStudentId=String(document.getElementById("studentId").value||"").trim(); currentDay=Number(new URLSearchParams(location.search).get("day"));
+  const b=document.getElementById("startBtn");
+  currentStudentId=URL_STUDENT||String(document.getElementById("studentId").value||"").trim();
+  currentDay=URL_DAY;
   if(!currentStudentId){alert("Mã sinh viên bắt buộc phải có.");return} if(!currentDay){alert("Hệ thống chưa xác định được ngày tham gia IEC. Hãy mở đúng liên kết được gửi trong ngày.");return}
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Hãy sử dụng Google Chrome: trình duyệt hiện tại không hỗ trợ nhận diện giọng nói.");return}
   b.disabled=true;b.textContent="ĐANG XIN QUYỀN MICRO...";
   try{
     await ensureMicrophonePermission(); b.textContent="ĐANG TẢI BÀI...";
-    const data=await jsonp(API_BASE+"?api=final-test&student="+encodeURIComponent(currentStudentId)+"&day="+currentDay);
+    const data=await jsonp(
+      API_BASE+"?api=final-test&student="+encodeURIComponent(currentStudentId)+"&day="+currentDay,
+      60000
+    );
     if(!data||data.ok===false)throw new Error(data&&data.error||"Invalid FINAL data");
     if(data.rest||!Array.isArray(data.words)||!data.words.length){b.disabled=false;b.textContent="KHÔNG CÓ TỪ ĐỎ – HÔM NAY KHÔNG CẦN LÀM";return}
-    WORDS=data.words.map(w=>({coreId:Number(w.stt),vietnamese:String(w.vietnamese||""),english:String(w.english||""),ipa:String(w.ipa||""),pronNote:String(w.pronNote||""),chapter:String(w.chapter||""),source:String(w.source||"NEW").toUpperCase()}));
+    WORDS=data.words.map(w=>({
+      coreId:Number(w.coreId ?? w.stt ?? w.id),
+      vietnamese:String(w.vietnamese||""),
+      english:String(w.english||""),
+      ipa:String(w.ipa||""),
+      pronNote:String(w.pronNote||""),
+      chapter:String(w.chapter||""),
+      source:String(w.source||"NEW").toUpperCase()
+    }));
     finalResults=[];sessionId=String(data.sessionId||makeSessionId());testStartIso=String(data.startTime||new Date().toISOString());
     document.getElementById("studentId").disabled=true;b.classList.add("hidden");
     document.getElementById("testArea").classList.remove("hidden");currentIndex=0;testRunning=true;prepareWord();
@@ -197,125 +226,145 @@ function finishTest(){
 }
 
 function submitFinalResults(){if(!finalResults.length)return;postPayload({api:"final-submit",studentId:currentStudentId,day:currentDay,sessionId:sessionId,startTime:testStartIso,results:finalResults})}
-function submitClip() {
+function clipSubmitKey(){
+  const sid=currentStudentId||URL_STUDENT||String(document.getElementById("studentId").value||"").trim();
+  const d=currentDay||URL_DAY;
+  return "IEC_V2_CLIP_SENT::"+sid+"::DAY"+d;
+}
 
-  const input = document.getElementById("clipUrl");
-  const btn = document.getElementById("clipBtn");
-  const box = document.getElementById("submitMsg");
+function restoreClipSubmitState(){
+  try{
+    const raw=localStorage.getItem(clipSubmitKey());
+    if(!raw)return;
+    const saved=JSON.parse(raw);
+    if(!saved||!saved.url)return;
+    const input=document.getElementById("clipUrl");
+    const btn=document.getElementById("clipBtn");
+    const box=document.getElementById("submitMsg");
+    input.value=saved.url;
+    input.readOnly=true;
+    btn.dataset.locked="1";
+    btn.disabled=true;
+    btn.textContent="ĐÃ NỘP LINK ✓";
+    box.textContent="Link video đã được gửi từ trình duyệt này. Không cần bấm lại.";
+  }catch(e){}
+}
 
-  const u = String(input.value || "").trim();
+function submitClip(){
+  const input=document.getElementById("clipUrl");
+  const btn=document.getElementById("clipBtn");
+  const box=document.getElementById("submitMsg");
+  const u=String(input.value||"").trim();
 
-  // Đã bấm rồi thì tuyệt đối không gửi lần 2
-  if (btn.dataset.locked === "1") {
+  if(btn.dataset.locked==="1")return;
+  if(!/^https?:\/\//i.test(u)){
+    alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");
     return;
   }
 
-  if (!/^https?:\/\//i.test(u)) {
-    alert(
-      "Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https."
-    );
-    return;
-  }
+  btn.dataset.locked="1";
+  btn.disabled=true;
+  input.readOnly=true;
+  btn.textContent="ĐANG NỘP...";
+  box.textContent="Đang gửi link video...";
 
-  // KHÓA NGAY TRƯỚC KHI GỬI
-  // → double-click cũng không thể tạo lần gửi thứ hai
-  btn.dataset.locked = "1";
-  btn.disabled = true;
-
-  input.readOnly = true;
-
-  btn.textContent = "ĐANG NỘP...";
-  box.textContent = "Đang gửi link video...";
+  try{
+    localStorage.setItem(clipSubmitKey(),JSON.stringify({url:u,time:new Date().toISOString()}));
+  }catch(e){}
 
   postPayload({
-    api: "clip-submit",
-    studentId: currentStudentId,
-    day: currentDay,
-    clipUrl: u
+    api:"clip-submit",
+    studentId:currentStudentId,
+    day:currentDay,
+    clipUrl:u
+  },function(){
+    btn.textContent="ĐÃ NỘP LINK ✓";
+    box.textContent="ĐÃ GỬI LINK VIDEO. KHÔNG CẦN BẤM LẠI.";
   });
-
-  /*
-    Không phụ thuộc vào postMessage của Apps Script nữa.
-    Yêu cầu đã được gửi → chuyển trạng thái ngay.
-  */
-
-  btn.textContent = "ĐÃ NỘP LINK ✓";
-
-  box.textContent =
-    "ĐÃ GỬI LINK VIDEO. KHÔNG CẦN BẤM LẠI.";
 }
-function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
-function handleBackendMessage(e) {
 
-  const d = e.data;
+function postPayload(payload,onSent){
+  const f=document.createElement("form");
+  f.method="POST";
+  f.action=API_BASE;
+  f.target="submitFrame";
 
-  if (
-    !d ||
-    typeof d !== "object" ||
-    d.ok === undefined
-  ) {
-    return;
-  }
+  const i=document.createElement("input");
+  i.type="hidden";
+  i.name="payload";
+  i.value=JSON.stringify(payload);
+  f.appendChild(i);
 
-  const box =
-    document.getElementById("submitMsg");
+  const frame=document.getElementById("submitFrame");
+  let done=false;
+  const markSent=function(){
+    if(done)return;
+    done=true;
+    frame.removeEventListener("load",markSent);
+    if(typeof onSent==="function")onSent();
+  };
+  frame.addEventListener("load",markSent);
 
-  const btn =
-    document.getElementById("clipBtn");
+  document.body.appendChild(f);
+  f.submit();
+  f.remove();
 
-  const input =
-    document.getElementById("clipUrl");
+  setTimeout(markSent,5000);
+}
 
+function handleBackendMessage(e){
+  const d=e.data;
+  if(!d||typeof d!=="object"||d.ok===undefined)return;
 
-  if (d.ok) {
+  const box=document.getElementById("submitMsg");
+  const btn=document.getElementById("clipBtn");
+  const input=document.getElementById("clipUrl");
 
-    // Phản hồi riêng của CLIP
-    if (d.clipSaved) {
-
-      btn.dataset.locked = "1";
-      btn.disabled = true;
-
-      input.readOnly = true;
-
-      btn.textContent =
-        "ĐÃ NỘP VIDEO ✓";
-
-      box.textContent =
-        "Đã nhận link video. Không cần bấm lại.";
-
-      return;
+  if(d.ok){
+    if(d.clipSaved){
+      btn.dataset.locked="1";
+      btn.disabled=true;
+      input.readOnly=true;
+      btn.textContent="ĐÃ NỘP LINK ✓";
+      box.textContent="Đã nhận link video. Không cần bấm lại.";
+    }else{
+      box.textContent="Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??"");
     }
-
-
-    // Phản hồi của FINAL RESULTS
-    box.textContent =
-      "Đã lưu bài cuối ngày. " +
-      "XANH DƯƠNG=" + (d.blue ?? "") +
-      " · XANH LÁ=" + (d.green ?? "") +
-      " · ĐỎ=" + (d.red ?? "");
-
     return;
   }
 
-
-  // Chỉ khi backend thực sự báo lỗi
-  // mới cho phép sinh viên gửi lại.
-
-  btn.dataset.locked = "";
-  btn.disabled = false;
-
-  input.readOnly = false;
-
-  btn.textContent =
-    "NỘP LINK VIDEO";
-
-  box.textContent =
-    "LỖI HỆ THỐNG: " +
-    String(d.error || "Lỗi không xác định");
+  // Không tự mở nút nộp clip lại vì có nguy cơ tạo bản ghi trùng.
+  if(btn.dataset.locked==="1"){
+    box.textContent="Hệ thống đã nhận yêu cầu gửi link. Nếu cần kiểm tra, liên hệ giảng viên; không bấm gửi lại.";
+  }else{
+    box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định");
+  }
 }
+
 function safeAbortRecognition(){if(!recognition)return;try{recognition.onend=null;recognition.abort()}catch(e){}recognition=null}
 function makeSessionId(){return currentStudentId.replace(/\s+/g,"_")+"-D"+currentDay+"-"+Date.now()}
-function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),timer=setTimeout(()=>cleanup(new Error("Hết thời gian chờ hệ thống phản hồi")),15000);function cleanup(err,data){clearTimeout(timer);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>cleanup(null,d);s.onerror=()=>cleanup(new Error("Không tải được dữ liệu từ hệ thống"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
+function jsonp(url,timeoutMs){
+  return new Promise((resolve,reject)=>{
+    const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6);
+    const s=document.createElement("script");
+    let finished=false;
+    const timer=setTimeout(()=>cleanup(new Error("Hết thời gian chờ hệ thống phản hồi")),Number(timeoutMs)||45000);
+
+    function cleanup(err,data){
+      if(finished)return;
+      finished=true;
+      clearTimeout(timer);
+      try{delete window[cb]}catch(e){window[cb]=undefined}
+      s.remove();
+      err?reject(err):resolve(data);
+    }
+
+    window[cb]=d=>cleanup(null,d);
+    s.onerror=()=>cleanup(new Error("Không tải được dữ liệu từ hệ thống"));
+    s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();
+    document.head.appendChild(s);
+  });
+}
 </script>
 </body>
 </html>
