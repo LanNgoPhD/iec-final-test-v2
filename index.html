@@ -197,7 +197,28 @@ function finishTest(){
 }
 
 function submitFinalResults(){if(!finalResults.length)return;postPayload({api:"final-submit",studentId:currentStudentId,day:currentDay,sessionId:sessionId,startTime:testStartIso,results:finalResults})}
-function submitClip(){const u=String(document.getElementById("clipUrl").value||"").trim();if(!/^https?:\/\//i.test(u)){alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");return}postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u})}
+function submitClip(){
+  const input=document.getElementById("clipUrl");
+  const btn=document.getElementById("clipBtn");
+  const box=document.getElementById("submitMsg");
+  const u=String(input.value||"").trim();
+
+  if(btn.disabled)return;
+
+  if(!/^https?:\/\//i.test(u)){
+    alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");
+    return;
+  }
+
+  // Khóa NGAY khi bấm để không thể gửi lặp do double-click/bấm liên tục.
+  btn.disabled=true;
+  input.readOnly=true;
+  btn.textContent="ĐÃ GỬI LINK ✓";
+  box.textContent="Link video đã được gửi. Không cần bấm lại.";
+
+  // Giữ NGUYÊN cơ chế gửi cũ đang hoạt động.
+  postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u});
+}
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
 function handleBackendMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const box=document.getElementById("submitMsg");if(d.ok){box.textContent=d.clipSaved?"Đã lưu link video.":("Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??""));}else box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định")}
 function safeAbortRecognition(){if(!recognition)return;try{recognition.onend=null;recognition.abort()}catch(e){}recognition=null}
