@@ -44,7 +44,7 @@
     <div id="clipBox" class="clipBox hidden">
       <label for="clipUrl">LINK VIDEO CUỐI NGÀY</label>
       <input id="clipUrl" placeholder="Dán liên kết Google Drive / video tại đây">
-      <div class="actions"><button id="clipBtn" class="success">NỘP LINK VIDEO</button></div>
+      <div class="actions"><button id="clipBtn" type="button" class="success">NỘP LINK VIDEO</button></div>
       <div id="submitMsg" class="msg"></div>
     </div>
   </div>
@@ -60,6 +60,7 @@ let recognition=null,currentIndex=0,testRunning=false,responseLocked=false;
 let wordStartTime=null,firstSpeechTime=null,sessionSpeechStartTime=null,reactionClock=null,reactionDeadline=null,maxSpeechTimer=null,silenceTimer=null;
 let currentUtterance="",firstAnswer="",finalAnswer="",restartCount=0,speechSeenInSession=false,voiceDetectedCurrent=false;
 let finalResults=[],currentStudentId="",currentDay=0,sessionId="",testStartIso="";
+let clipSubmitPending=false;
 
 document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("startBtn").addEventListener("click",startTest);
@@ -193,34 +194,36 @@ function finishTest(){
   testRunning=false;clearTimers();safeAbortRecognition();document.getElementById("progress").textContent=WORDS.length+" / "+WORDS.length;document.getElementById("vietnamese").textContent="HOÀN THÀNH";document.getElementById("timer").textContent="";
   const total=finalResults.length,pass=finalResults.filter(r=>r.result==="PASS").length,pending=finalResults.filter(r=>r.result==="PENDING").length,red=total-pass-pending;
   document.getElementById("status").innerHTML="HOÀN THÀNH BÀI CUỐI NGÀY – Tổng: "+total+" &nbsp; <span class='resultBlue'>XANH DƯƠNG / ĐẠT: "+pass+"</span> &nbsp; <span class='resultGreen'>XANH LÁ / CHỜ DUYỆT: "+pending+"</span> &nbsp; <span class='resultRed'>ĐỎ: "+red+"</span>";
-  document.getElementById("clipBox").classList.remove("hidden");document.getElementById("nextBtn").classList.add("hidden");document.getElementById("stopBtn").classList.add("hidden");submitFinalResults();
+  document.getElementById("clipBox").classList.remove("hidden");restoreClipSubmissionState();document.getElementById("nextBtn").classList.add("hidden");document.getElementById("stopBtn").classList.add("hidden");submitFinalResults();
 }
 
 function submitFinalResults(){if(!finalResults.length)return;postPayload({api:"final-submit",studentId:currentStudentId,day:currentDay,sessionId:sessionId,startTime:testStartIso,results:finalResults})}
+function clipLockKey(){return "IEC_CLIP_SENT::"+String(currentStudentId||"").trim()+"::D"+Number(currentDay||0)}
+function applyClipLockedState(url){const input=document.getElementById("clipUrl"),btn=document.getElementById("clipBtn"),box=document.getElementById("submitMsg");btn.dataset.locked="1";btn.disabled=true;input.readOnly=true;if(url&&!input.value)input.value=url;btn.textContent="ĐÃ NỘP LINK ✓";box.textContent="ĐÃ GỬI LINK VIDEO. KHÔNG CẦN BẤM LẠI."}
+function clearClipLockedState(){const input=document.getElementById("clipUrl"),btn=document.getElementById("clipBtn");try{localStorage.removeItem(clipLockKey())}catch(e){}btn.dataset.locked="";btn.disabled=false;input.readOnly=false;btn.textContent="NỘP LINK VIDEO"}
+function restoreClipSubmissionState(){let saved="";try{saved=localStorage.getItem(clipLockKey())||""}catch(e){}if(saved)applyClipLockedState(saved)}
 function submitClip(){
-  const input=document.getElementById("clipUrl");
-  const btn=document.getElementById("clipBtn");
-  const box=document.getElementById("submitMsg");
+  const input=document.getElementById("clipUrl"),btn=document.getElementById("clipBtn"),box=document.getElementById("submitMsg");
   const u=String(input.value||"").trim();
-
-  if(btn.disabled)return;
-
-  if(!/^https?:\/\//i.test(u)){
-    alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");
-    return;
-  }
-
-  // Khóa NGAY khi bấm để không thể gửi lặp do double-click/bấm liên tục.
-  btn.disabled=true;
-  input.readOnly=true;
-  btn.textContent="ĐÃ GỬI LINK ✓";
-  box.textContent="Link video đã được gửi. Không cần bấm lại.";
-
-  // Giữ NGUYÊN cơ chế gửi cũ đang hoạt động.
+  if(btn.dataset.locked==="1"||btn.disabled)return;
+  if(!/^https?:\/\//i.test(u)){alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");return}
+  clipSubmitPending=true;
+  try{localStorage.setItem(clipLockKey(),u)}catch(e){}
+  applyClipLockedState(u);
   postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u});
 }
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
-function handleBackendMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const box=document.getElementById("submitMsg");if(d.ok){box.textContent=d.clipSaved?"Đã lưu link video.":("Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??""));}else box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định")}
+function handleBackendMessage(e){
+  const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;
+  const box=document.getElementById("submitMsg");
+  if(d.ok){
+    if(d.clipSaved){clipSubmitPending=false;applyClipLockedState(document.getElementById("clipUrl").value);return}
+    box.textContent="Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??"");
+    return;
+  }
+  if(clipSubmitPending){clipSubmitPending=false;clearClipLockedState()}
+  box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định");
+}
 function safeAbortRecognition(){if(!recognition)return;try{recognition.onend=null;recognition.abort()}catch(e){}recognition=null}
 function makeSessionId(){return currentStudentId.replace(/\s+/g,"_")+"-D"+currentDay+"-"+Date.now()}
 function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),timer=setTimeout(()=>cleanup(new Error("Hết thời gian chờ hệ thống phản hồi")),15000);function cleanup(err,data){clearTimeout(timer);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>cleanup(null,d);s.onerror=()=>cleanup(new Error("Không tải được dữ liệu từ hệ thống"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
