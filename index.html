@@ -197,9 +197,122 @@ function finishTest(){
 }
 
 function submitFinalResults(){if(!finalResults.length)return;postPayload({api:"final-submit",studentId:currentStudentId,day:currentDay,sessionId:sessionId,startTime:testStartIso,results:finalResults})}
-function submitClip(){const u=String(document.getElementById("clipUrl").value||"").trim();if(!/^https?:\/\//i.test(u)){alert("Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https.");return}postPayload({api:"clip-submit",studentId:currentStudentId,day:currentDay,clipUrl:u})}
+function submitClip() {
+
+  const input = document.getElementById("clipUrl");
+  const btn = document.getElementById("clipBtn");
+  const box = document.getElementById("submitMsg");
+
+  const u = String(input.value || "").trim();
+
+  // Đã bấm rồi thì tuyệt đối không gửi lần 2
+  if (btn.dataset.locked === "1") {
+    return;
+  }
+
+  if (!/^https?:\/\//i.test(u)) {
+    alert(
+      "Hãy dán liên kết video hợp lệ bắt đầu bằng http hoặc https."
+    );
+    return;
+  }
+
+  // KHÓA NGAY TRƯỚC KHI GỬI
+  // → double-click cũng không thể tạo lần gửi thứ hai
+  btn.dataset.locked = "1";
+  btn.disabled = true;
+
+  input.readOnly = true;
+
+  btn.textContent = "ĐANG NỘP...";
+  box.textContent = "Đang gửi link video...";
+
+  postPayload({
+    api: "clip-submit",
+    studentId: currentStudentId,
+    day: currentDay,
+    clipUrl: u
+  });
+
+  /*
+    Không phụ thuộc vào postMessage của Apps Script nữa.
+    Yêu cầu đã được gửi → chuyển trạng thái ngay.
+  */
+
+  btn.textContent = "ĐÃ NỘP LINK ✓";
+
+  box.textContent =
+    "ĐÃ GỬI LINK VIDEO. KHÔNG CẦN BẤM LẠI.";
+}
 function postPayload(payload){const f=document.createElement("form");f.method="POST";f.action=API_BASE;f.target="submitFrame";const i=document.createElement("input");i.type="hidden";i.name="payload";i.value=JSON.stringify(payload);f.appendChild(i);document.body.appendChild(f);f.submit();f.remove()}
-function handleBackendMessage(e){const d=e.data;if(!d||typeof d!=="object"||d.ok===undefined)return;const box=document.getElementById("submitMsg");if(d.ok){box.textContent=d.clipSaved?"Đã lưu link video.":("Đã lưu bài cuối ngày. XANH DƯƠNG="+(d.blue??"")+" · XANH LÁ="+(d.green??"")+" · ĐỎ="+(d.red??""));}else box.textContent="LỖI HỆ THỐNG: "+String(d.error||"Lỗi không xác định")}
+function handleBackendMessage(e) {
+
+  const d = e.data;
+
+  if (
+    !d ||
+    typeof d !== "object" ||
+    d.ok === undefined
+  ) {
+    return;
+  }
+
+  const box =
+    document.getElementById("submitMsg");
+
+  const btn =
+    document.getElementById("clipBtn");
+
+  const input =
+    document.getElementById("clipUrl");
+
+
+  if (d.ok) {
+
+    // Phản hồi riêng của CLIP
+    if (d.clipSaved) {
+
+      btn.dataset.locked = "1";
+      btn.disabled = true;
+
+      input.readOnly = true;
+
+      btn.textContent =
+        "ĐÃ NỘP VIDEO ✓";
+
+      box.textContent =
+        "Đã nhận link video. Không cần bấm lại.";
+
+      return;
+    }
+
+
+    // Phản hồi của FINAL RESULTS
+    box.textContent =
+      "Đã lưu bài cuối ngày. " +
+      "XANH DƯƠNG=" + (d.blue ?? "") +
+      " · XANH LÁ=" + (d.green ?? "") +
+      " · ĐỎ=" + (d.red ?? "");
+
+    return;
+  }
+
+
+  // Chỉ khi backend thực sự báo lỗi
+  // mới cho phép sinh viên gửi lại.
+
+  btn.dataset.locked = "";
+  btn.disabled = false;
+
+  input.readOnly = false;
+
+  btn.textContent =
+    "NỘP LINK VIDEO";
+
+  box.textContent =
+    "LỖI HỆ THỐNG: " +
+    String(d.error || "Lỗi không xác định");
+}
 function safeAbortRecognition(){if(!recognition)return;try{recognition.onend=null;recognition.abort()}catch(e){}recognition=null}
 function makeSessionId(){return currentStudentId.replace(/\s+/g,"_")+"-D"+currentDay+"-"+Date.now()}
 function jsonp(url){return new Promise((resolve,reject)=>{const cb="__iec_"+Date.now()+"_"+Math.floor(Math.random()*1e6),s=document.createElement("script"),timer=setTimeout(()=>cleanup(new Error("Hết thời gian chờ hệ thống phản hồi")),15000);function cleanup(err,data){clearTimeout(timer);delete window[cb];s.remove();err?reject(err):resolve(data)}window[cb]=d=>cleanup(null,d);s.onerror=()=>cleanup(new Error("Không tải được dữ liệu từ hệ thống"));s.src=url+(url.includes("?")?"&":"?")+"callback="+encodeURIComponent(cb)+"&_="+Date.now();document.head.appendChild(s)})}
